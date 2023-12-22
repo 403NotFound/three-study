@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+    <!-- <script src="./three.js-master/build/three.js"></script> -->
+
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "./three.js-master/build/three.module.js",
+          "three/addons/": "./three.js-master/examples/jsm/"
+        }
+      }
+    </script>
+    <style>
+      body {
+        overflow: hidden;
+        margin: 0px;
+      }
+      #info {
+        position: absolute;
+        top: 10px;
+        width: 100%;
+        text-align: center;
+        z-index: 100;
+        display: block;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="box"></div>
+    <script type="module">
+      import * as THREE from "three"
+      import { OrbitControls } from "three/addons/controls/OrbitControls.js"
+      import { GUI } from "three/addons/libs/lil-gui.module.min.js"
+      //引入性能监视器stats.js
+      import Stats from "three/addons/libs/stats.module.js"
+      //创建stats对象
+      const stats = new Stats()
+      document.body.appendChild(stats.domElement)
+      const scene = new THREE.Scene()
+
+      const width = window.innerWidth //窗口文档显示区的宽度作为画布宽度
+      const height = window.innerHeight //窗口文档显示区的高度作为画布高度
+      const camera = new THREE.PerspectiveCamera(50, width / height, 1, 3000)
+      camera.position.set(200, 200, 200)
+      camera.lookAt(0, 0, 0)
+      // 创建渲染器对象
+      const renderer = new THREE.WebGLRenderer({
+        antialias: true,
+      })
+      renderer.setPixelRatio(window.devicePixelRatio)
+      renderer.setClearColor(0x444444, 1) //设置背景颜色
+      renderer.setSize(width, height) //设置three.js渲染区域的尺寸(像素px)
+      document.body.appendChild(renderer.domElement)
+
+      const pointLight = new THREE.PointLight(0xffffff, 1.0)
+      pointLight.intensity = 80000 //光照强度
+      //点光源位置
+      pointLight.position.set(100, 50, 100) //点光源放在x轴上
+      scene.add(pointLight) //点光源添加到场景中
+
+      // 光源辅助观察
+      const pointLightHelper = new THREE.PointLightHelper(pointLight, 10)
+      scene.add(pointLightHelper)
+
+      // 设置相机控件轨道控制器OrbitControls
+      const controls = new OrbitControls(camera, renderer.domElement)
+      // AxesHelper：辅助观察的坐标系
+      const axesHelper = new THREE.AxesHelper(150)
+      scene.add(axesHelper)
+
+      // =============================================================
+      //创建一个空的几何体对象
+      const geometry = new THREE.BufferGeometry()
+      //类型化数组创建顶点数据
+      const vertices = new Float32Array([
+        0,
+        0,
+        0, //顶点1坐标
+        50,
+        0,
+        0, //顶点2坐标
+        0,
+        100,
+        0, //顶点3坐标
+        0,
+        0,
+        10, //顶点4坐标
+        0,
+        0,
+        100, //顶点5坐标
+        50,
+        0,
+        10, //顶点6坐标
+      ])
+      // 创建属性缓冲区对象
+      //3个为一组，表示一个顶点的xyz坐标
+      const attribue = new THREE.BufferAttribute(vertices, 3)
+      // 设置几何体attributes属性的位置属性
+      geometry.attributes.position = attribue
+      // 点渲染模式
+      const material = new THREE.PointsMaterial({
+        color: 0xffff00,
+        size: 1.0, //点对象像素尺寸
+      })
+      const points = new THREE.Points(geometry, material) //点模型对象
+      scene.add(points)
+      // =============================================================
+      // 渲染函数
+      function render() {
+        renderer.render(scene, camera) //执行渲染操作
+        stats.update()
+        requestAnimationFrame(render) //请求再次执行渲染函数render，渲染下一帧
+      }
+      render()
+      window.onresize = function () {
+        // 重置渲染器输出画布canvas尺寸
+        renderer.setSize(window.innerWidth, window.innerHeight)
+        // 全屏情况下：设置观察范围长宽比aspect为窗口宽高比
+        camera.aspect = window.innerWidth / window.innerHeight
+        camera.updateProjectionMatrix()
+      }
+    </script>
+  </body>
+</html>

@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+    <!-- <script src="./three.js-master/build/three.js"></script> -->
+
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "./three.js-master/build/three.module.js",
+          "three/addons/": "./three.js-master/examples/jsm/"
+        }
+      }
+    </script>
+    <style>
+      body {
+        overflow: hidden;
+        margin: 0px;
+      }
+      #info {
+        position: absolute;
+        top: 10px;
+        width: 100%;
+        text-align: center;
+        z-index: 100;
+        display: block;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="box"></div>
+    <div id="info">Description</div>
+    <script type="module">
+      import * as THREE from "three"
+      import { OrbitControls } from "three/addons/controls/OrbitControls.js"
+      import { GUI } from "three/addons/libs/lil-gui.module.min.js"
+      //引入性能监视器stats.js
+      import Stats from "three/addons/libs/stats.module.js"
+      //创建stats对象
+      const stats = new Stats()
+      document.body.appendChild(stats.domElement)
+      const scene = new THREE.Scene()
+
+      const width = window.innerWidth //窗口文档显示区的宽度作为画布宽度
+      const height = window.innerHeight //窗口文档显示区的高度作为画布高度
+      const camera = new THREE.PerspectiveCamera(50, width / height, 1, 3000)
+      camera.position.set(200, 200, 200)
+      camera.lookAt(0, 0, 0)
+      // 创建渲染器对象
+      const renderer = new THREE.WebGLRenderer({
+        antialias: true,
+      })
+      renderer.setPixelRatio(window.devicePixelRatio)
+      renderer.setClearColor(0x444444, 1) //设置背景颜色
+      renderer.setSize(width, height) //设置three.js渲染区域的尺寸(像素px)
+      document.body.appendChild(renderer.domElement)
+
+      const pointLight = new THREE.PointLight(0xffffff, 1.0)
+      pointLight.intensity = 80000 //光照强度
+      //点光源位置
+      pointLight.position.set(100, 50, 100) //点光源放在x轴上
+      scene.add(pointLight) //点光源添加到场景中
+
+      // 光源辅助观察
+      const pointLightHelper = new THREE.PointLightHelper(pointLight, 10)
+      scene.add(pointLightHelper)
+
+      // 设置相机控件轨道控制器OrbitControls
+      const controls = new OrbitControls(camera, renderer.domElement)
+      // AxesHelper：辅助观察的坐标系
+      const axesHelper = new THREE.AxesHelper(150)
+      scene.add(axesHelper)
+
+      // =============================================================
+      // 批量创建多个长方体表示高层楼
+      const group1 = new THREE.Group() //所有高层楼的父对象
+      group1.name = "高层"
+      //纹理贴图加载器TextureLoader
+      const texLoader = new THREE.TextureLoader()
+      // .load()方法加载图像，返回一个纹理对象Texture
+      const texture = texLoader.load(
+        "./three.js-master/examples/textures/colors.png"
+      )
+
+      const texture2 = texLoader.load(
+        "./three.js-master/examples/textures/brick_diffuse.jpg"
+      )
+      // const material = new THREE.MeshLambertMaterial({
+      //   // 设置纹理贴图：Texture对象作为材质map属性的属性值
+      //   map: texture, //map表示材质的颜色贴图属性
+      // })
+      for (let i = 0; i < 5; i++) {
+        const geometry = new THREE.BoxGeometry(20, 60, 10)
+        const material = new THREE.MeshLambertMaterial({
+          // color: 0x00ffff,
+          map: texture,
+        })
+        const mesh = new THREE.Mesh(geometry, material)
+        mesh.position.x = i * 30 // 网格模型mesh沿着x轴方向阵列
+        group1.add(mesh) //添加到组对象group1
+        mesh.name = i + 1 + "号楼"
+        console.log("mesh.name", mesh.name)
+      }
+      group1.position.y = 30
+
+      const group2 = new THREE.Group()
+      group2.name = "洋房"
+      // 批量创建多个长方体表示洋房
+      for (let i = 0; i < 5; i++) {
+        const geometry = new THREE.BoxGeometry(20, 30, 10)
+        const material = new THREE.MeshLambertMaterial({
+          color: 0x00ffff,
+        })
+        const mesh = new THREE.Mesh(geometry, material)
+        mesh.position.x = i * 30
+        group2.add(mesh) //添加到组对象group2
+        mesh.name = i + 6 + "号楼"
+      }
+      group2.position.z = 50
+      group2.position.y = 15
+
+      const model = new THREE.Group()
+      model.name = "小区房子"
+      model.add(group1, group2)
+      model.position.set(-50, 0, -25)
+
+      //把group插入到场景中作为场景子对象
+      scene.add(model)
+
+      // 返回名.name为"4号楼"对应的对象
+      const nameNode = scene.getObjectByName("4号楼")
+      nameNode.material.map = texture2
+      // nameNode.visible = false //隐藏该对象
+      // nameNode.material.visible = false //隐藏该对象
+
+      // 声明一个三维向量用来表示某个坐标
+      const worldPosition = new THREE.Vector3()
+      // 获取mesh的世界坐标，你会发现mesh的世界坐标受到父对象group的.position影响
+      model.getWorldPosition(worldPosition)
+      console.log("世界坐标", worldPosition)
+      console.log("本地坐标", model.position)
+
+      // =============================================================
+      // 渲染函数
+      function render() {
+        renderer.render(scene, camera) //执行渲染操作
+        stats.update() // .rotateY()默认绕几何体中心旋转，经过上面几何体平移变化，你会发现.rotateY()是绕长方体面上一条线旋转
+        // model.rotateY(0.01)
+
+        requestAnimationFrame(render) //请求再次执行渲染函数render，渲染下一帧
+      }
+      render()
+      window.onresize = function () {
+        // 重置渲染器输出画布canvas尺寸
+        renderer.setSize(window.innerWidth, window.innerHeight)
+        // 全屏情况下：设置观察范围长宽比aspect为窗口宽高比
+        camera.aspect = window.innerWidth / window.innerHeight
+        camera.updateProjectionMatrix()
+      }
+    </script>
+  </body>
+</html>
